@@ -1,21 +1,43 @@
 <!doctype html>
+{% comment %} 
+'class=js' This class is often used to apply styles or scripts conditionally based on whether JavaScript is enabled.
+'lang=' This is a Liquid placeholder that dynamically inserts the ISO code of the locale
+ {% endcomment %}
 <html class="js" lang="{{ request.locale.iso_code }}">
   <head>
+    {% comment %} Specifies the character encoding for the HTML document {% endcomment %}
     <meta charset="utf-8">
+    {% comment %} Ensures that Internet Explorer uses the latest rendering engine {% endcomment %}
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    {% comment %} Controls the layout on mobile browsers {% endcomment %}
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    {% comment %} Defines the color of the browser's address bar on mobile devices {% endcomment %}
     <meta name="theme-color" content="">
+    {% comment %} Specifies the preferred version of a web page URL {% endcomment %}
     <link rel="canonical" href="{{ canonical_url }}">
 
+    {% comment %} 
+    The rel attribute tells the browser what the resource is for. 
+    The type attribute specifies the resource type.
+    {% endcomment %}
     {%- if settings.favicon != blank -%}
       <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {%- endif -%}
 
+    {% comment %} 
+    system? Method: Checks if the font is a system font.
+    preconnect and crossorigin: Improve performance and handle cross-origin requests.
+    {% endcomment %}
     {%- unless settings.type_header_font.system? and settings.type_body_font.system? -%}
       <link rel="preconnect" href="https://fonts.shopifycdn.com" crossorigin>
     {%- endunless -%}
 
     <title>
+      {% comment %} 
+      The <title> element sets the title of the web page.
+      You can add tags and page numbers to the title tag.
+      The title tag is important for search engine optimization (SEO) and accessibility.
+      {% endcomment %}
       {{ page_title }}
       {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
       {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
@@ -23,11 +45,19 @@
     </title>
 
     {% if page_description %}
+      {% comment %} 
+      escape filter ensuring that any special characters are properly encoded for HTML. 
+      A well-written meta description can improve your page’s visibility and attractiveness in search results.
+      {% endcomment %}
       <meta name="description" content="{{ page_description | escape }}">
     {% endif %}
 
+    {% comment %} Including this snippet helps keep the <head> section modular and maintainable. {% endcomment %}
     {% render 'meta-tags' %}
 
+    {% comment %} These lines include JavaScript files necessary for various functionalities on your site.
+    The defer attribute in HTML can be written either as defer="defer" or simply as defer.
+    {% endcomment %}
     <script src="{{ 'constants.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'pubsub.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'global.js' | asset_url }}" defer="defer"></script>
@@ -41,12 +71,17 @@
 
     {{ content_for_header }}
 
+    {% comment %} Assigning variables for body_font bold, italic and bold_italic {% endcomment %}
     {%- liquid
       assign body_font_bold = settings.type_body_font | font_modify: 'weight', 'bold'
       assign body_font_italic = settings.type_body_font | font_modify: 'style', 'italic'
       assign body_font_bold_italic = body_font_bold | font_modify: 'style', 'italic'
     %}
 
+    {% comment %} 
+    The font-display: swap property is a CSS rule that controls how fonts are rendered. 
+    When specified, the browser will use a fallback font until the custom font is fully loaded, then swap to the custom font. 
+    {% endcomment %}
     {% style %}
       {{ settings.type_body_font | font_face: font_display: 'swap' }}
       {{ body_font_bold | font_face: font_display: 'swap' }}
@@ -54,12 +89,18 @@
       {{ body_font_bold_italic | font_face: font_display: 'swap' }}
       {{ settings.type_header_font | font_face: font_display: 'swap' }}
 
+      /*   Iterate over each color scheme defined in the settings.color_schemes array. */
       {% for scheme in settings.color_schemes -%}
+        /* Build a list of CSS class selectors for each color scheme. 
+        Each color scheme class is appended to the scheme_classes variable. */
         {% assign scheme_classes = scheme_classes | append: ', .color-' | append: scheme.id %}
+        /* For the first iteration (first color scheme), include :root to define global CSS variables. */
         {% if forloop.index == 1 -%}
           :root,
         {%- endif %}
+        /* Define CSS custom properties (variables) for the current color scheme. */
         .color-{{ scheme.id }} {
+          /* Set the background color for the color scheme using RGB values extracted from scheme.settings.background. */
           --color-background: {{ scheme.settings.background.red }},{{ scheme.settings.background.green }},{{ scheme.settings.background.blue }};
         {% if scheme.settings.background_gradient != empty %}
           --gradient-background: {{ scheme.settings.background_gradient }};
@@ -67,6 +108,10 @@
           --gradient-background: {{ scheme.settings.background }};
         {% endif %}
 
+        /* This block calculates the appropriate contrast color for the background, based on its brightness.
+        It assigns a lighter or darker version of the background color to ensure sufficient contrast.
+        If the background is very dark, it lightens the color significantly.
+        If moderately dark, it lightens it slightly, and if light, it darkens it to create contrast. */
         {% liquid
           assign background_color = scheme.settings.background
           assign background_color_brightness = background_color | color_brightness
@@ -79,6 +124,10 @@
           endif
         %}
 
+        /* This block defines CSS custom properties for various elements using the color values
+        from the current color scheme. It sets colors for foreground (text), background contrast,
+        shadows, buttons, and more, using the RGB values provided in the color scheme settings.
+        These properties will be applied to style different UI components. */
         --color-foreground: {{ scheme.settings.text.red }},{{ scheme.settings.text.green }},{{ scheme.settings.text.blue }};
         --color-background-contrast: {{ background_color_contrast.red }},{{ background_color_contrast.green }},{{ background_color_contrast.blue }};
         --color-shadow: {{ scheme.settings.shadow.red }},{{ scheme.settings.shadow.green }},{{ scheme.settings.shadow.blue }};
@@ -94,11 +143,20 @@
       }
       {% endfor %}
 
+      /* This block applies the generated color scheme classes to the body element. 
+      It sets the text color and background color of the body using the calculated CSS custom properties.
+      The text color is slightly transparent (75% opacity) for visual effect. */
       {{ scheme_classes | prepend: 'body' }} {
         color: rgba(var(--color-foreground), 0.75);
         background-color: rgb(var(--color-background));
       }
 
+      /* This block of code defines CSS custom properties (variables) used throughout the theme to manage 
+      various styles dynamically. The variables are set based on theme settings configured in the 
+      Shopify admin. These settings control typography, layout dimensions, padding, margins, border 
+      styles, shadows, and more, allowing for flexible design adjustments without directly modifying 
+      CSS files. The values are pulled from `settings_schema.json` and processed as necessary (e.g., 
+      converting units, adjusting brightness, etc.) to ensure correct rendering in different contexts. */
       :root {
         --font-body-family: {{ settings.type_body_font.family }}, {{ settings.type_body_font.fallback_families }};
         --font-body-style: {{ settings.type_body_font.style }};
@@ -222,32 +280,56 @@
         --variant-pills-shadow-blur-radius: {{ settings.variant_pills_shadow_blur }}px;
       }
 
+      /* This selector targets all elements on the page, as well as their ::before and ::after pseudo-elements. */
       *,
       *::before,
       *::after {
+        /* This rule makes all elements inherit the box-sizing property from their parent elements. */
         box-sizing: inherit;
       }
 
       html {
+        /* It's common to set box-sizing: border-box; globally to ensure that padding and borders 
+        are included in the element’s total width and height, which makes layout calculations more predictable. */
         box-sizing: border-box;
+        /* root html size of the browser is typically 16px so 1rem = 16px. 0.625rem = 10px */
         font-size: calc(var(--font-body-scale) * 62.5%);
         height: 100%;
       }
 
       body {
+        /* CSS Grid is primarily designed for creating two-dimensional layouts. 
+        It allows you to define both rows and columns, */
         display: grid;
+        /* The first two rows (auto auto) will automatically size based on their content.
+        The third row (1fr) will take up the remaining space. 
+        The 1fr unit stands for "1 fraction of the available space." */
         grid-template-rows: auto auto 1fr auto;
+        /* This line defines that the grid will have only one column that spans 100% of the width of the body. 
+        Essentially, this makes the entire body content flow in a single column. */
         grid-template-columns: 100%;
+        /* This line ensures that the body element will take up at least 100% of the height of the viewport. 
+        This is often used to ensure that the body covers the full height of the screen, 
+        even if the content is less than the height of the screen. */
         min-height: 100%;
+        /* This line removes any default margin that browsers might apply to the body element, 
+        ensuring that the body content aligns perfectly with the edges of the viewport. */
         margin: 0;
+        /* 1.5rem = 15px (1.5 * 10px base) */
         font-size: 1.5rem;
+        /* This line sets the spacing between the letters (tracking) to 0.06rem, which is 0.06 times the root font size.  */
         letter-spacing: 0.06rem;
+        /* This line calculates the line height dynamically based on the value of the custom CSS property --font-body-scale */
         line-height: calc(1 + 0.8 / var(--font-body-scale));
+        /* This line sets the font family to the value of the custom property --font-body-family */
         font-family: var(--font-body-family);
+        /* This line sets the font style (e.g., normal, italic, etc.) according to the value of the --font-body-style custom property. */
         font-style: var(--font-body-style);
+        /* This line sets the font weight (e.g., regular, bold) based on the --font-body-weight custom property. */
         font-weight: var(--font-body-weight);
       }
 
+      /* This is a media query. It applies the enclosed styles only when the screen width is at least 750 pixels wide. */
       @media screen and (min-width: 750px) {
         body {
           font-size: 1.6rem;
@@ -255,9 +337,18 @@
       }
     {% endstyle %}
 
+    {% comment %} It includes the base CSS file into the page from the assets folder
+    'stylesheet_tag:' This function wraps the generated URL in a <link> element, 
+    adding the necessary attributes (rel="stylesheet", href="URL") to include the CSS file on the page.  
+    {% endcomment %}
     {{ 'base.css' | asset_url | stylesheet_tag }}
+    {% comment %}  this stylesheet is initially loaded only for print media, 
+    and once it's loaded, the `onload` event changes its media attribute to 'all,' 
+    making it apply to all media types. This technique can help with performance by deferring 
+    non-essential styles until needed. {% endcomment %}
     <link rel="stylesheet" href="{{ 'component-cart-items.css' | asset_url }}" media="print" onload="this.media='all'">
 
+    {% comment %} Renders those stylesheets if cart type = drawer (general settings) {% endcomment %}
     {%- if settings.cart_type == 'drawer' -%}
       {{ 'component-cart-drawer.css' | asset_url | stylesheet_tag }}
       {{ 'component-cart.css' | asset_url | stylesheet_tag }}
@@ -291,6 +382,8 @@
       >
     {%- endif -%}
 
+    {% comment %} This block of JavaScript is used to detect if the Shopify store is in "design mode" 
+     (a special mode used by theme editors in Shopify) {% endcomment %}
     <script>
       if (Shopify.designMode) {
         document.documentElement.classList.add('shopify-design-mode');
@@ -298,6 +391,7 @@
     </script>
   </head>
 
+  {% comment %} A static class applied to the body and a liquid conditional statement to add a class {% endcomment %}
   <body class="gradient{% if settings.animations_hover_elements != 'none' %} animate--hover-{{ settings.animations_hover_elements }}{% endif %}">
     <a class="skip-to-content-link button visually-hidden" href="#MainContent">
       {{ 'accessibility.skip_to_text' | t }}
@@ -309,6 +403,9 @@
 
     {% sections 'header-group' %}
 
+    {% comment %} ID used for the skip-to-content link to target this section. 
+    'tabindex="-1":' Allows the element to receive focus programmatically, 
+    but not through keyboard navigation.{% endcomment %}
     <main id="MainContent" class="content-for-layout focus-none" role="main" tabindex="-1">
       {{ content_for_layout }}
     </main>
@@ -320,8 +417,16 @@
       <li id="a11y-new-window-message">{{ 'accessibility.link_messages.new_window' | t }}</li>
     </ul>
 
+    {% comment %} 
+    This script is setting up some global variables and strings for various parts of the Shopify theme. 
+    These global variables are typically used to provide dynamic data to JavaScript functions, 
+    making it easier to handle things like cart interactions, product variants, and localization. 
+    {% endcomment %}
     <script>
+      // This sets a global variable shopUrl on the window object.
+      // The request.origin property returns the origin of the current request, which is the URL of the current web page.
       window.shopUrl = '{{ request.origin }}';
+      // This sets up a global object routes with several properties related to cart functionality and predictive search.
       window.routes = {
         cart_add_url: '{{ routes.cart_add_url }}',
         cart_change_url: '{{ routes.cart_change_url }}',
@@ -330,11 +435,13 @@
         predictive_search_url: '{{ routes.predictive_search_url }}',
       };
 
+      // This sets up a global object cartStrings for storing localized strings related to the cart.
       window.cartStrings = {
         error: `{{ 'sections.cart.cart_error' | t }}`,
         quantityError: `{{ 'sections.cart.cart_quantity_error_html' | t: quantity: '[quantity]' }}`,
       };
 
+      // This sets up a global object variantStrings for storing localized strings related to product variants.
       window.variantStrings = {
         addToCart: `{{ 'products.product.add_to_cart' | t }}`,
         soldOut: `{{ 'products.product.sold_out' | t }}`,
@@ -342,6 +449,7 @@
         unavailable_with_option: `{{ 'products.product.value_unavailable' | t: option_value: '[value]' }}`,
       };
 
+      // This sets up a global object quickOrderListStrings for strings related to a quick order list.
       window.quickOrderListStrings = {
         itemsAdded: `{{ 'sections.quick_order_list.items_added.other' | t: quantity: '[quantity]' }}`,
         itemAdded: `{{ 'sections.quick_order_list.items_added.one' | t: quantity: '[quantity]' }}`,
@@ -354,6 +462,7 @@
         step_error: `{{- 'sections.quick_order_list.step_error' | t: step: '[step]' }}`,
       };
 
+      // This sets up a global object accessibilityStrings for strings related to accessibility features.
       window.accessibilityStrings = {
         imageAvailable: `{{ 'products.product.media.image_available' | t: index: '[index]' }}`,
         shareSuccess: `{{ 'general.share.success_message' | t }}`,
